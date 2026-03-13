@@ -1,24 +1,24 @@
 import Editor from "@monaco-editor/react";
+import * as monaco from "monaco-editor";
 
 export default function CodeViewer({ code }: { code: string }) {
 
   return (
-
-    <div className="h-full">
-
+    <div className="h-full w-full">
       <Editor
         height="100%"
-        defaultLanguage="python"
+        defaultLanguage="javascript"
         theme="vs-dark"
         value={code}
+        beforeMount={(m) => {
+          Object.assign(m, monaco);
+        }}
         options={{
           fontSize: 14,
           minimap: { enabled: false },
-          automaticLayout: true
+          automaticLayout: true,
         }}
       />
-
     </div>
-
   );
 }

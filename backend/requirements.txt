@@ -1,7 +1,9 @@
 fastapi
 uvicorn
-pydantic
+sqlalchemy
 python-dotenv
-websockets
+alembic
 google-generativeai
 structlog
+websockets
+pydantic
