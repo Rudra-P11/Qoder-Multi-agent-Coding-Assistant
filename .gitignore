@@ -1,7 +1,67 @@
-fastapi
-uvicorn
-pydantic
-python-dotenv
-websockets
-google-generativeai
-structlog
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+# Python virtual environments
+venv/
+.env/
+.venv/
+env/
+
+# =========================
+# Environment Variables
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# Node (for frontend later)
+# =========================
+node_modules/
+dist/
+build/
+
+# =========================
+# Coverage / Testing
+# =========================
+.coverage
+.pytest_cache/
+htmlcov/
+
+# =========================
+# Cache
+# =========================
+.cache/
+
+# =========================
+# Temporary files
+# =========================
+*.tmp
+*.temp
+*.bak
