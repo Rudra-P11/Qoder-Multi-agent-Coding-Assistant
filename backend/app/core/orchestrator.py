@@ -15,7 +15,6 @@ class AgentOrchestrator:
 
     async def start_task(self, task: str):
 
-        # Create session
         session_id = session_manager.create_session(task)
 
         await event_bus.broadcast({
@@ -27,7 +26,6 @@ class AgentOrchestrator:
             }
         })
 
-        # Planning phase
         await event_bus.broadcast({
             "agent": "planner",
             "message": "Planning task"
@@ -63,12 +61,10 @@ class AgentOrchestrator:
 
         task = session["prompt"]
 
-        # mark approved
         session_manager.approve_plan(session_id)
 
         plan = plan_manager.get_plan(session_id)
 
-        # create TODO file
         todo_manager.create_todo(plan)
 
         await event_bus.broadcast({
@@ -79,13 +75,12 @@ class AgentOrchestrator:
             }
         })
 
-        # start agent execution
         await event_bus.broadcast({
             "agent": "system",
             "message": "Starting agent execution"
         })
 
-        result = await agent_loop.run(task)
+        result = await agent_loop.run(task, session_id)
 
         await event_bus.broadcast({
             "agent": "system",
