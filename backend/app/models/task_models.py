@@ -7,13 +7,12 @@ class TaskRequest(BaseModel):
     prompt: str
 
 
-class PlanResponse(BaseModel):
+class PlanApprovalRequest(BaseModel):
 
-    steps: List[str]
+    session_id: str
+    approved: bool
 
+class PlanModificationRequest(BaseModel):
 
-class AgentEvent(BaseModel):
-
-    agent: str
-    message: str
-    data: dict | None = None
+    session_id: str
+    new_plan: List[str]
