@@ -9,6 +9,8 @@ from app.core.event_bus import event_bus
 from app.memory.memory_manager import memory_manager
 from app.safety.action_validator import action_validator
 
+from app.agents.supervisor_agent import supervisor_agent
+
 
 class AgentLoop:
 
@@ -98,6 +100,13 @@ class AgentLoop:
         await event_bus.broadcast({
             "agent": "reflection",
             "message": reflection
+        })
+
+        supervisor_advice = supervisor_agent.evaluate(task, context)
+
+        await event_bus.broadcast({
+            "agent": "supervisor",
+            "message": supervisor_advice
         })
 
         return {

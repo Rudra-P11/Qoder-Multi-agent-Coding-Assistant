@@ -1,20 +1,21 @@
 import google.generativeai as genai
 
 from app.config import settings
+from app.llm.model_router import model_router
+
 
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
+
 class GeminiClient:
 
-    def __init__(self):
+    def generate(self, prompt, task=""):
 
-        self.model = genai.GenerativeModel(
-            settings.MODEL_FLASH
-        )
+        model_name = model_router.select_model(task)
 
-    def generate(self, prompt: str):
+        model = genai.GenerativeModel(model_name)
 
-        response = self.model.generate_content(prompt)
+        response = model.generate_content(prompt)
 
         return response.text
 
