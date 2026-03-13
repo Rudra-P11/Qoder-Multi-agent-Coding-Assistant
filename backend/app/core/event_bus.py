@@ -2,6 +2,7 @@ from typing import List
 from fastapi import WebSocket
 
 from app.timeline.timeline_manager import timeline_manager
+from app.database.crud import store_event
 
 
 class EventBus:
@@ -27,6 +28,20 @@ class EventBus:
             event.get("message"),
             event.get("data")
         )
+
+        session_id = None
+
+        if event.get("data"):
+            session_id = event["data"].get("session_id")
+
+        if session_id:
+
+            store_event(
+                session_id,
+                event.get("agent"),
+                event.get("message"),
+                event.get("data")
+            )
 
         for connection in self.connections:
 
