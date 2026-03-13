@@ -41,7 +41,7 @@ Thumbs.db
 *.swo
 
 # =========================
-# Node (for frontend later)
+# Node (for frontend)
 # =========================
 node_modules/
 dist/
