@@ -1,6 +1,8 @@
 import os
 
 from app.memory.memory_manager import memory_manager
+from app.project.project_indexer import project_indexer
+
 
 class ContextBuilder:
 
@@ -8,12 +10,7 @@ class ContextBuilder:
 
         conversation = memory_manager.get_conversation(session_id)
 
-        files = []
-
-        if os.path.exists("workspace"):
-
-            for file in os.listdir("workspace"):
-                files.append(file)
+        workspace = project_indexer.index_workspace()
 
         todo = ""
 
@@ -24,7 +21,7 @@ class ContextBuilder:
 
         return {
             "conversation": conversation,
-            "files": files,
+            "workspace": workspace,
             "todo": todo
         }
 
