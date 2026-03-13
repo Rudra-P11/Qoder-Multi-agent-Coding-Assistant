@@ -1,4 +1,6 @@
 from app.agents.planner_agent import PlannerAgent
+from app.execution.agent_loop import agent_loop
+
 from app.core.event_bus import event_bus
 from app.core.session_manager import session_manager
 from app.core.plan_manager import plan_manager
@@ -13,14 +15,19 @@ class AgentOrchestrator:
 
     async def start_task(self, task: str):
 
+        # Create session
         session_id = session_manager.create_session(task)
 
         await event_bus.broadcast({
             "agent": "system",
             "message": "Task received",
-            "data": {"session_id": session_id}
+            "data": {
+                "session_id": session_id,
+                "task": task
+            }
         })
 
+        # Planning phase
         await event_bus.broadcast({
             "agent": "planner",
             "message": "Planning task"
@@ -33,7 +40,10 @@ class AgentOrchestrator:
         await event_bus.broadcast({
             "agent": "planner",
             "message": "Plan generated",
-            "data": {"plan": plan, "session_id": session_id}
+            "data": {
+                "session_id": session_id,
+                "plan": plan
+            }
         })
 
         await event_bus.broadcast({
@@ -43,20 +53,51 @@ class AgentOrchestrator:
 
         return session_id, plan
 
+
     async def approve_plan(self, session_id):
 
+        session = session_manager.get_session(session_id)
+
+        if not session:
+            return {"error": "Invalid session"}
+
+        task = session["prompt"]
+
+        # mark approved
         session_manager.approve_plan(session_id)
 
         plan = plan_manager.get_plan(session_id)
 
+        # create TODO file
         todo_manager.create_todo(plan)
 
         await event_bus.broadcast({
             "agent": "system",
-            "message": "Plan approved. TODO file created.",
-            "data": {"plan": plan}
+            "message": "Plan approved. TODO created.",
+            "data": {
+                "plan": plan
+            }
         })
 
-        return plan
+        # start agent execution
+        await event_bus.broadcast({
+            "agent": "system",
+            "message": "Starting agent execution"
+        })
+
+        result = await agent_loop.run(task)
+
+        await event_bus.broadcast({
+            "agent": "system",
+            "message": "Execution finished",
+            "data": {
+                "result": result
+            }
+        })
+
+        return {
+            "status": "completed",
+            "result": result
+        }
 
 orchestrator = AgentOrchestrator()

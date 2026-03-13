@@ -18,7 +18,7 @@ class PlannerAgent:
         output = gemini_client.generate(prompt)
 
         steps = [
-            line.strip()
+            line.strip().split(".",1)[-1].strip()
             for line in output.split("\n")
             if line.strip()
         ]

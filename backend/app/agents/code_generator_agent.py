@@ -1,4 +1,3 @@
-from app.llm.prompts import CODE_SYSTEM_PROMPT
 from app.llm.gemini_client import gemini_client
 from app.core.workflow_logger import WorkflowLogger
 
@@ -9,20 +8,27 @@ class CodeGeneratorAgent:
 
         self.logger = WorkflowLogger()
 
-    def generate_code(self, task, plan):
+    def generate_code(self, task, plan, language):
 
         self.logger.log("CodeGeneratorAgent", "Generating code")
 
         prompt = f"""
-{CODE_SYSTEM_PROMPT}
+You are a coding agent.
 
 Task:
 {task}
 
-Plan:
+Language:
+{language}
+
+Execution Plan:
 {plan}
 
-Generate the full script.
+Generate complete working code.
+
+Rules:
+- Only output code
+- No explanations
 """
 
         code = gemini_client.generate(prompt)

@@ -15,7 +15,10 @@ class SessionManager:
             "plan": [],
             "approved": False,
             "todo": [],
-            "history": []
+            "history": [],
+            "language": None,
+            "framework": None,
+            "dependencies": []
         }
 
         return session_id
