@@ -16,3 +16,15 @@ User Task:
 
 Create the execution plan.
 """
+
+CODE_SYSTEM_PROMPT = """
+You are a coding agent.
+
+Your task:
+Generate code to implement the requested task.
+
+Rules:
+- Always output valid code
+- Do not include explanations
+- The output must be executable
+"""
