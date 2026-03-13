@@ -10,18 +10,34 @@ class ContextBuilder:
 
         conversation = memory_manager.get_conversation(session_id)
 
-        workspace = project_indexer.index_workspace()
+        workspace_tree = project_indexer.index_workspace()
 
+        files = []
+
+        workspace_path = "workspace"
+
+        if os.path.exists(workspace_path):
+
+            for root, dirs, filenames in os.walk(workspace_path):
+
+                for file in filenames:
+
+                    path = os.path.join(root, file)
+
+                    files.append(path)
+
+        # TODO file
         todo = ""
 
         if os.path.exists("project_todo.md"):
 
-            with open("project_todo.md") as f:
+            with open("project_todo.md", "r") as f:
                 todo = f.read()
 
         return {
             "conversation": conversation,
-            "workspace": workspace,
+            "workspace_tree": workspace_tree,
+            "files": files,
             "todo": todo
         }
 
