@@ -1,5 +1,5 @@
 from app.tools.tool_registry import TOOL_REGISTRY
-from app.safety.command_guard import command_guard
+from app.sandbox.command_guard import command_guard
 from app.execution.runtime_detector import runtime_detector
 
 

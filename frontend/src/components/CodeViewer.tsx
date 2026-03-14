@@ -10,7 +10,7 @@ export default function CodeViewer({ code, onChange }: Props) {
   return (
     <Editor
       height="100%"
-      defaultLanguage="python"
+      defaultLanguage="javascript"
       theme="vs-dark"
       value={code}
       onChange={(value) => onChange(value || "")}

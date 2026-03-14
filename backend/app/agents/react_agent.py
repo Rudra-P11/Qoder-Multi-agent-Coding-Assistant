@@ -65,7 +65,7 @@ Respond ONLY in JSON format:
 }}
 """
 
-        response = gemini_client.generate(prompt, max_tokens=500)
+        response = gemini_client.generate(prompt)
 
         try:
 

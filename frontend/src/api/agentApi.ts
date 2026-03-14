@@ -14,8 +14,11 @@ export const createTask = async (prompt: string) => {
 
 export const approvePlan = async (sessionId: string) => {
 
-  await API.post("/approve-plan", null, {
-    params: { session_id: sessionId },
+  const res = await API.post("/approve-plan", {
+    session_id: sessionId,
+    approved: true
   });
+
+  return res.data;
 
 };

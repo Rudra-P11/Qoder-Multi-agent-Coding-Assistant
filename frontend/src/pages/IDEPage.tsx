@@ -11,6 +11,8 @@ import { useAgent } from "../hooks/useAgent";
 import { createTask, approvePlan } from "../api/agentApi";
 import { readFile, saveFile } from "../api/workspaceApi";
 
+
+
 export default function IDEPage() {
 
   const { events, workspaceEvents } = useAgent();
@@ -21,6 +23,8 @@ export default function IDEPage() {
   const [sessionId, setSessionId] = useState("");
 
   const openFile = async (path: string) => {
+
+    if (path === currentFile) return;
 
     const content = await readFile(path);
 
