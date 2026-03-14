@@ -1,12 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { fetchFiles } from "../api/workspaceApi";
 
-export default function FileExplorer() {
+export default function FileExplorer({ onSelect, refreshKey }: any) {
 
-  const [files] = useState([
-    "main.py",
-    "utils.py",
-    "data.csv"
-  ]);
+  const [files, setFiles] = useState<string[]>([]);
+
+  const loadFiles = () => {
+    fetchFiles().then(setFiles);
+  };
+
+  useEffect(() => {
+    loadFiles();
+  }, [refreshKey]);
 
   return (
 
@@ -19,6 +24,7 @@ export default function FileExplorer() {
         <div
           key={i}
           className="text-sm p-1 hover:bg-gray-700 cursor-pointer"
+          onClick={() => onSelect(file)}
         >
           {file}
         </div>
@@ -26,6 +32,5 @@ export default function FileExplorer() {
       ))}
 
     </div>
-
   );
 }

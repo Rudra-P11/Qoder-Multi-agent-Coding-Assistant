@@ -5,6 +5,7 @@ import type { AgentEvent } from "../types/agentTypes";
 export const useAgent = () => {
 
   const [events, setEvents] = useState<AgentEvent[]>([]);
+  const [workspaceEvents, setWorkspaceEvents] = useState<any[]>([]);
 
   useEffect(() => {
 
@@ -12,11 +13,15 @@ export const useAgent = () => {
 
       setEvents(prev => [...prev, data]);
 
+      if (data.agent === "workspace") {
+        setWorkspaceEvents(prev => [...prev, data]);
+      }
+
     });
 
     return () => ws.close();
 
   }, []);
 
-  return { events };
+  return { events, workspaceEvents };
 };
