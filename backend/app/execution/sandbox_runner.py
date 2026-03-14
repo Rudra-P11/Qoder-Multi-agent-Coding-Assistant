@@ -1,6 +1,6 @@
 from app.tools.tool_registry import TOOL_REGISTRY
-from app.sandbox.command_guard import command_guard
-from app.sandbox.tool_result_store import tool_result_store
+from app.safety.command_guard import command_guard
+from app.execution.runtime_detector import runtime_detector
 
 
 class SandboxRunner:
@@ -10,18 +10,18 @@ class SandboxRunner:
         if tool_name not in TOOL_REGISTRY:
             raise Exception("Invalid tool")
 
-        if tool_name == "run_command":
+        if tool_name == "run_code":
 
-            command = input_data.get("command")
+            file_path = input_data.get("file")
 
-            if not command_guard.validate(command):
-                raise Exception("Unsafe command blocked")
+            runtime = runtime_detector.detect_runtime(file_path)
+
+            if not runtime:
+                raise Exception("Unsupported runtime")
 
         tool = TOOL_REGISTRY[tool_name]
 
         result = tool(**input_data)
-
-        tool_result_store.store(tool_name, result)
 
         return result
 

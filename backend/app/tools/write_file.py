@@ -1,4 +1,5 @@
 import os
+import asyncio
 
 from app.core.event_bus import event_bus
 
@@ -14,8 +15,6 @@ def write_file(path: str, content: str):
     with open(full_path, "w", encoding="utf-8") as f:
         f.write(content)
 
-    import asyncio
-
     asyncio.create_task(
         event_bus.broadcast({
             "agent": "workspace",
@@ -26,4 +25,7 @@ def write_file(path: str, content: str):
         })
     )
 
-    return {"status": "written"}
+    return {
+        "status": "written",
+        "path": path
+    }

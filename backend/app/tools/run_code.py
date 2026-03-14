@@ -1,23 +1,60 @@
 import subprocess
-import tempfile
+import os
+
+from app.execution.runtime_detector import runtime_detector
 
 
-def run_code(code: str):
+def run_code(file_path: str):
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".py") as f:
+    runtime = runtime_detector.detect_runtime(file_path)
 
-        f.write(code.encode())
+    if not runtime:
 
-        path = f.name
+        return {
+            "error": f"No runtime found for {file_path}"
+        }
 
     try:
 
-        result = subprocess.run(
-            ["python", path],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
+        if runtime[0] in ["g++", "gcc"]:
+
+            exe = file_path.replace(".cpp", "").replace(".c", "")
+
+            subprocess.run(
+                [runtime[0], file_path, "-o", exe],
+                capture_output=True,
+                text=True
+            )
+
+            result = subprocess.run(
+                [exe],
+                capture_output=True,
+                text=True
+            )
+
+        elif runtime[0] == "javac":
+
+            subprocess.run(
+                ["javac", file_path],
+                capture_output=True,
+                text=True
+            )
+
+            class_name = os.path.basename(file_path).replace(".java", "")
+
+            result = subprocess.run(
+                ["java", class_name],
+                capture_output=True,
+                text=True
+            )
+
+        else:
+
+            result = subprocess.run(
+                runtime + [file_path],
+                capture_output=True,
+                text=True
+            )
 
         return {
             "stdout": result.stdout,
