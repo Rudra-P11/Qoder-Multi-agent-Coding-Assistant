@@ -1,0 +1,29 @@
+import os
+
+from app.core.event_bus import event_bus
+
+WORKSPACE_ROOT = "workspace"
+
+
+def create_file(path: str):
+
+    full_path = os.path.join(WORKSPACE_ROOT, path)
+
+    os.makedirs(os.path.dirname(full_path), exist_ok=True)
+
+    with open(full_path, "w") as f:
+        f.write("")
+
+    import asyncio
+
+    asyncio.create_task(
+        event_bus.broadcast({
+            "agent": "workspace",
+            "message": "file_created",
+            "data": {
+                "path": path
+            }
+        })
+    )
+
+    return {"status": "created"}
