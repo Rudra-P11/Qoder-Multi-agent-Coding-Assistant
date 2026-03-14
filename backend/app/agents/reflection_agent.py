@@ -1,23 +1,29 @@
 from app.llm.gemini_client import gemini_client
+from app.core.workflow_logger import WorkflowLogger
 
 
 class ReflectionAgent:
 
-    def reflect(self, task, result):
+    def __init__(self):
+
+        self.logger = WorkflowLogger()
+
+    def reflect(self, code: str, output: str):
+
+        self.logger.log("ReflectionAgent", "Reflecting on result")
 
         prompt = f"""
-Task:
-{task}
+Code:
+{code}
 
-Result:
-{result}
+Output:
+{output}
 
-Analyze the execution.
-
-What went wrong?
-What could be improved?
-
-Return a short reflection.
+Summarize what happened and whether the task succeeded.
+If not successful, suggest improvements or next steps.
 """
 
         return gemini_client.generate(prompt)
+
+
+reflection_agent = ReflectionAgent()

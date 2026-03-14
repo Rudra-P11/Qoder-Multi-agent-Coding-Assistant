@@ -15,16 +15,12 @@ from app.agents.supervisor_agent import supervisor_agent
 class AgentLoop:
 
     def __init__(self):
-
         self.agent = ReactAgent()
         self.reflector = ReflectionAgent()
-
         self.max_steps = 20
 
     async def run(self, task, session_id):
-
         context = ""
-
         memory_manager.store_user_prompt(session_id, task)
 
         await event_bus.broadcast({
@@ -33,7 +29,7 @@ class AgentLoop:
         })
 
         for step in range(self.max_steps):
-
+            # 1. ReAct Reasoning Step
             action = self.agent.think(task, session_id, context)
 
             thought = action.get("thought")
@@ -50,22 +46,20 @@ class AgentLoop:
                 }
             })
 
+            # Check if agent is finished
             if tool == "none":
-
                 await event_bus.broadcast({
                     "agent": "react-agent",
                     "message": "Agent finished reasoning"
                 })
-
                 break
 
+            # 2. Safety Validation
             if not action_validator.validate(action):
-
                 await event_bus.broadcast({
                     "agent": "system",
-                    "message": "Invalid tool requested. Aborting."
+                    "message": f"Invalid tool '{tool}' requested. Aborting."
                 })
-
                 break
 
             await event_bus.broadcast({
@@ -74,27 +68,53 @@ class AgentLoop:
                 "data": input_data
             })
 
-            try:
+            # 3. Tool Execution with Self-Correction (Retries)
+            max_retries = 3
+            attempt = 0
+            result = None
 
-                result = sandbox_runner.run_tool(tool, input_data)
+            while attempt < max_retries:
+                try:
+                    result = sandbox_runner.run_tool(tool, input_data)
+                    
+                    # If execution was successful (exit_code 0), break retry loop
+                    if result.get("exit_code") == 0 or result.get("status") == "success":
+                        break
+                
+                except Exception as e:
+                    result = {
+                        "status": "error",
+                        "error": str(e)
+                    }
 
-            except Exception as e:
+                attempt += 1
+                
+                # Feedback loop: Broadcast retry and update context so the agent sees the error
+                await event_bus.broadcast({
+                    "agent": "debugger",
+                    "message": f"Retry attempt {attempt} for tool: {tool}",
+                    "data": result
+                })
 
-                result = {
-                    "status": "error",
-                    "error": str(e)
-                }
+                # Inject error into context to help the agent correct itself in the next iteration
+                context += f"\n[Attempt {attempt}] Error: {result.get('error') or result}\n"
+                
+                # Note: In a true self-correction loop, you might call self.agent.think() 
+                # again here to get NEW input_data based on the error. 
+                # As written, it retries the same input_data.
 
             await event_bus.broadcast({
                 "agent": "tool",
-                "message": f"Tool {tool} executed",
+                "message": f"Tool {tool} execution sequence complete",
                 "data": result
             })
 
+            # Update context for the next step in the main loop
             context += f"\nThought: {thought}"
             context += f"\nAction: {tool}"
             context += f"\nResult: {result}\n"
 
+        # 4. Final Reflection and Supervision
         reflection = self.reflector.reflect(task, context)
 
         await event_bus.broadcast({
@@ -111,7 +131,8 @@ class AgentLoop:
 
         return {
             "context": context,
-            "reflection": reflection
+            "reflection": reflection,
+            "supervisor_advice": supervisor_advice
         }
 
 

@@ -1,17 +1,32 @@
 import subprocess
+import tempfile
 
 
-def run_code(file_path: str):
+def run_code(code: str):
 
-    process = subprocess.run(
-        ["python", file_path],
-        capture_output=True,
-        text=True,
-        timeout=20
-    )
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".py") as f:
 
-    return {
-        "stdout": process.stdout,
-        "stderr": process.stderr,
-        "exit_code": process.returncode
-    }
+        f.write(code.encode())
+
+        path = f.name
+
+    try:
+
+        result = subprocess.run(
+            ["python", path],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+
+        return {
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "exit_code": result.returncode
+        }
+
+    except Exception as e:
+
+        return {
+            "error": str(e)
+        }
