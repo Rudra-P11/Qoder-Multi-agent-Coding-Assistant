@@ -5,8 +5,10 @@ import CodeViewer from "../components/CodeViewer";
 import TerminalOutput from "../components/TerminalOutput";
 import AgentTimeline from "../components/AgentTimeline";
 import TaskInput from "../components/TaskInput";
+import PlanPanel from "../components/PlanPanel";
 
 import { useAgent } from "../hooks/useAgent";
+import { createTask, approvePlan } from "../api/agentApi";
 import { readFile, saveFile } from "../api/workspaceApi";
 
 export default function IDEPage() {
@@ -15,7 +17,8 @@ export default function IDEPage() {
 
   const [code, setCode] = useState("");
   const [currentFile, setCurrentFile] = useState("");
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [plan, setPlan] = useState<string[]>([]);
+  const [sessionId, setSessionId] = useState("");
 
   const openFile = async (path: string) => {
 
@@ -34,13 +37,22 @@ export default function IDEPage() {
 
   };
 
-  useEffect(() => {
+  const handlePrompt = async (prompt: string) => {
 
-    if (workspaceEvents.length > 0) {
-      setRefreshKey(prev => prev + 1);
-    }
+    const data = await createTask(prompt);
 
-  }, [workspaceEvents]);
+    setPlan(data.plan);
+    setSessionId(data.session_id);
+
+  };
+
+  const handleApprove = async () => {
+
+    await approvePlan(sessionId);
+
+    setPlan([]);
+
+  };
 
   const terminalLogs = events.map(
     (e) => `${e.agent}: ${e.message}`
@@ -50,10 +62,14 @@ export default function IDEPage() {
 
     <div className="h-screen flex flex-col">
 
+      {plan.length > 0 && (
+        <PlanPanel plan={plan} onApprove={handleApprove} />
+      )}
+
       <div className="flex flex-1 overflow-hidden">
 
         <div className="w-48 border-r border-gray-700">
-          <FileExplorer onSelect={openFile} refreshKey={refreshKey} />
+          <FileExplorer onSelect={openFile} />
         </div>
 
         <div className="flex-1 border-r border-gray-700">
@@ -70,18 +86,7 @@ export default function IDEPage() {
         <TerminalOutput logs={terminalLogs} />
       </div>
 
-      <div className="flex">
-
-        <TaskInput />
-
-        <button
-          onClick={saveCurrentFile}
-          className="bg-green-600 text-white px-4"
-        >
-          Save
-        </button>
-
-      </div>
+      <TaskInput onPrompt={handlePrompt} />
 
     </div>
   );

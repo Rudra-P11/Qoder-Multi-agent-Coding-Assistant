@@ -5,14 +5,17 @@ const API = axios.create({
 });
 
 export const createTask = async (prompt: string) => {
+
   const res = await API.post("/task", { prompt });
+
   return res.data;
+
 };
 
 export const approvePlan = async (sessionId: string) => {
-  const res = await API.post("/approve-plan", {
-    session_id: sessionId,
+
+  await API.post("/approve-plan", null, {
+    params: { session_id: sessionId },
   });
 
-  return res.data;
 };
