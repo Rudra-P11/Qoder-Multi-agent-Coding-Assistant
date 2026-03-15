@@ -1,4 +1,4 @@
-from app.llm.gemini_client import gemini_client
+from app.llm.ollama_client import ollama_client
 from app.core.workflow_logger import WorkflowLogger
 
 
@@ -31,7 +31,7 @@ Rules:
 - No explanations
 """
 
-        code = gemini_client.generate(prompt)
+        code = ollama_client.generate(prompt)
 
         self.logger.log("CodeGeneratorAgent", "Code generated")
 

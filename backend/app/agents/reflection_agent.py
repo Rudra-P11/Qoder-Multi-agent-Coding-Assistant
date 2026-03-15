@@ -1,29 +1,30 @@
-from app.llm.gemini_client import gemini_client
+from app.llm.ollama_client import ollama_client
 from app.core.workflow_logger import WorkflowLogger
 
 
 class ReflectionAgent:
 
     def __init__(self):
-
         self.logger = WorkflowLogger()
 
     def reflect(self, code: str, output: str):
-
         self.logger.log("ReflectionAgent", "Reflecting on result")
 
-        prompt = f"""
-Code:
-{code}
+        # Trim context to avoid overloading 7B models and causing timeouts
+        context_summary = str(output)[-2000:]
 
-Output:
-{output}
+        prompt = f"""You are a code reviewer. In 2-3 sentences, summarize what the agent did and whether it succeeded.
 
-Summarize what happened and whether the task succeeded.
-If not successful, suggest improvements or next steps.
-"""
+Execution context (last 2000 chars):
+{context_summary}
 
-        return gemini_client.generate(prompt)
+Summary:"""
+
+        try:
+            result = ollama_client.generate(prompt)
+            return result if result and not result.startswith("ERROR") else "Execution complete. Check output above."
+        except Exception:
+            return "Execution complete. Check terminal output for results."
 
 
-reflection_agent = ReflectionAgent()
+reflection_agent = ReflectionAgent()

@@ -1,5 +1,5 @@
 from app.llm.prompts import SYSTEM_PROMPT, TASK_PROMPT_TEMPLATE
-from app.llm.gemini_client import gemini_client
+from app.llm.ollama_client import ollama_client
 from app.core.workflow_logger import WorkflowLogger
 
 
@@ -15,7 +15,7 @@ class PlannerAgent:
 
         prompt = SYSTEM_PROMPT + TASK_PROMPT_TEMPLATE.format(task=task)
 
-        output = gemini_client.generate(prompt)
+        output = ollama_client.generate(prompt)
 
         steps = [
             line.strip().split(".",1)[-1].strip()

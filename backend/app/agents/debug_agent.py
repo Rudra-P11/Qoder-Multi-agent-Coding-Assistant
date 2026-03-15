@@ -1,4 +1,4 @@
-from app.llm.gemini_client import gemini_client
+from app.llm.ollama_client import ollama_client
 
 
 class DebugAgent:
@@ -17,6 +17,6 @@ Code:
 Fix the code and return the corrected Python script.
 """
 
-        fixed_code = gemini_client.generate(prompt)
+        fixed_code = ollama_client.generate(prompt)
 
         return fixed_code

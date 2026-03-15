@@ -34,6 +34,16 @@ export default function IDEPage() {
     return () => clearTimeout(timeoutId);
   }, [code, currentFile]);
 
+  // Auto-open files written by the agent
+  useEffect(() => {
+    if (workspaceEvents.length === 0) return;
+    const latest = workspaceEvents[workspaceEvents.length - 1];
+    if (latest?.message === "file_updated" && latest?.data?.path) {
+      // Auto-open the file the agent just wrote
+      openFile(latest.data.path);
+    }
+  }, [workspaceEvents]);
+
   const openFile = async (path: string) => {
 
     if (path === currentFile) return;

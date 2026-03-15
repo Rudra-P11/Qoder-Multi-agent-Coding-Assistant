@@ -21,13 +21,39 @@ class AgentLoop:
         self.max_steps = 10
 
 
-    async def run(self, task, session_id):
-        context = ""
+    async def run(self, task: str, session_id: str, plan: list = None):
+        import os
+        from app.tools.read_todo import read_todo
+
+        context_parts = []
+
+        # 1. Inject the TODO file content (authoritative source of steps + filenames)
+        todo_content = read_todo()
+        if todo_content:
+            context_parts.append(
+                f"=== YOUR TODO LIST (follow this exactly, use the exact filenames listed) ===\n"
+                f"{todo_content}\n"
+                f"=== END TODO ==="
+            )
+
+        # 2. List existing workspace files so agent knows what's already there
+        try:
+            existing_files = workspace_manager.list_files()
+            if existing_files:
+                files_str = "\n".join(f"  - {f}" for f in existing_files)
+                context_parts.append(f"=== EXISTING WORKSPACE FILES ===\n{files_str}\n=== END FILES ===")
+        except Exception:
+            pass
+
+        context = "\n\n".join(context_parts)
         memory_manager.store_user_prompt(session_id, task)
+
         
         execution_attempt = 1
         last_action_key = None
         repeat_count = 0
+        last_written_file = None  # Track the most recently written file path
+
 
         await event_bus.broadcast({
             "agent": "react-agent",
@@ -68,18 +94,30 @@ class AgentLoop:
                 })
                 break
 
+            # Don't log file content to terminal — it belongs in the editor, not the log
+            log_data = (
+                {"path": input_data.get("path")}
+                if tool in ("write_file", "append_file")
+                else input_data
+            )
             await event_bus.broadcast({
                 "agent": "tool",
                 "message": f"Executing tool: {tool}",
-                "data": input_data
+                "data": log_data
             })
 
-            # Deduplication guard: if the agent is calling the same tool with same args twice, force a correction
+            # ── Deduplication / forced-progression guard ────────────────────
+            # For write_file: key on (tool + path) only — NOT content.
+            # The model often generates slightly different content each call,
+            # so keying on full input_data would miss successive writes to the same file.
             try:
-                action_key = f"{tool}:{json.dumps(input_data, sort_keys=True)}"
+                if tool == "write_file":
+                    action_key = f"write_file:{input_data.get('path', '')}"
+                else:
+                    action_key = f"{tool}:{json.dumps(input_data, sort_keys=True)}"
             except Exception:
                 action_key = f"{tool}:{str(input_data)}"
-            
+
             if action_key == last_action_key:
                 repeat_count += 1
             else:
@@ -87,15 +125,28 @@ class AgentLoop:
                 last_action_key = action_key
 
             if repeat_count >= 2:
-                correction_msg = (
-                    f"STOP. You have called '{tool}' with the same input {repeat_count + 1} times already. "
-                    f"Do NOT call '{tool}' again with the same input. "
-                    f"If you wrote a file, call run_code to execute it now. "
-                    f"If run_code already succeeded, output action 'none' to finish."
-                )
-                context += f"\n[LOOP DETECTED] {correction_msg}\n"
-                await event_bus.broadcast({"agent": "system", "message": f"[LOOP DETECTED] Repeated call to {tool} blocked. Agent redirected."})
-                continue
+                if tool == "write_file":
+                    # FORCED PROGRESSION: auto-run the file instead of warning the LLM
+                    written_path = input_data.get("path", "") or last_written_file or ""
+                    if written_path:
+                        await event_bus.broadcast({
+                            "agent": "system",
+                            "message": f"[AUTO] write_file loop detected. Forcing run_code on: {written_path}"
+                        })
+                        # Override tool and input — fall through to execution
+                        tool = "run_code"
+                        input_data = {"file_path": written_path}
+                        repeat_count = 0
+                        last_action_key = None
+                        # Do NOT continue — let execution proceed below
+                    else:
+                        await event_bus.broadcast({"agent": "system", "message": "[LOOP] write_file repeated but no path found. Skipping."})
+                        continue
+                else:
+                    await event_bus.broadcast({"agent": "system", "message": f"[LOOP] {tool} repeated {repeat_count + 1}x. Skipping."})
+                    context += f"\n[LOOP DETECTED] Stop calling '{tool}'. Move to the next logical step.\n"
+                    continue
+
 
             # 3. Tool Execution with Self-Correction
             try:
@@ -115,16 +166,22 @@ class AgentLoop:
 
             is_error = "error" in result or result.get("status") == "error"
 
+            # Track the last file successfully written so forced-run fallback can use it
+            if tool == "write_file" and not is_error:
+                last_written_file = input_data.get("path") or last_written_file
+
             if tool == "run_code":
                 file_path = input_data.get("file_path") or input_data.get("file", "")
+                # Show only file metadata — full code is already visible in the editor
                 try:
-                    code_content = workspace_manager.read_file(file_path) if file_path else "No file path provided."
+                    code_lines = len(workspace_manager.read_file(file_path).splitlines()) if file_path else 0
+                    code_summary = f"{file_path} ({code_lines} lines)"
                 except Exception:
-                    code_content = "Failed to read code file."
-                
+                    code_summary = file_path or "unknown file"
+
                 payload_data = {
                     "task": task,
-                    "code": code_content,
+                    "code": code_summary,
                     "result": result
                 }
                 

@@ -1,4 +1,4 @@
-from app.llm.gemini_client import gemini_client
+from app.llm.ollama_client import ollama_client
 from app.core.workflow_logger import WorkflowLogger
 
 
@@ -24,7 +24,7 @@ Error:
 Fix the code and return the corrected version.
 """
 
-        new_code = gemini_client.generate(prompt)
+        new_code = ollama_client.generate(prompt)
 
         return new_code
 

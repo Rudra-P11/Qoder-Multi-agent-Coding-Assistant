@@ -1,92 +1,65 @@
 import json
 
-from app.llm.gemini_client import gemini_client
+from app.llm.ollama_client import ollama_client, repair_json
 from app.llm.prompts import REACT_AGENT_PROMPT
-
-from app.memory.context_builder import context_builder
-
-
-TOOLS_DESCRIPTION = """
-Available tools:
-
-write_file(path, content)
-read_file(path)
-append_file(path, content)
-delete_file(path)
-list_files()
-search_code(query)
-run_command(command)
-run_code(file)
-install_package(package)
-read_todo()
-update_todo(content)
-
-When creating code files, always choose the correct file extension based on the language.
-
-Examples:
-Python → .py
-JavaScript → .js
-TypeScript → .ts
-C++ → .cpp
-Java → .java
-Go → .go
-Rust → .rs
-
-The language should be determined from the task requirements.
-"""
 
 
 class ReactAgent:
 
-    def think(self, task, session_id, context):
+    def think(self, task: str, session_id: str, context: str) -> dict:
 
-        project_context = context_builder.build_context(session_id)
+        # Format context as a clean Action → Observation history block
+        history_section = ""
+        if context.strip():
+            history_section = f"\n=== HISTORY (what you have already done) ===\n{context.strip()}\n=== END HISTORY ===\n"
 
-        prompt = f"""
-{REACT_AGENT_PROMPT}
+        prompt = (
+            REACT_AGENT_PROMPT
+            + f"\nUser task: {task}"
+            + history_section
+            + "\nYour next JSON action (output ONLY the JSON, nothing else):\n"
+        )
 
-Task:
-{task}
-
-Previous Context:
-{context}
-
-Project State:
-{project_context}
-
-{TOOLS_DESCRIPTION}
-
-Respond ONLY in JSON format:
-
-{{
-  "thought": "...",
-  "action": "...",
-  "input": {{ }}
-}}
-"""
-
-        response = gemini_client.generate(prompt)
+        response = ollama_client.generate_json(prompt)
 
         try:
-            # Strip markdown json blocks if present
-            cleaned_response = response.strip()
-            if cleaned_response.startswith("```json"):
-                cleaned_response = cleaned_response[7:]
-            elif cleaned_response.startswith("```"):
-                cleaned_response = cleaned_response[3:]
-            if cleaned_response.endswith("```"):
-                cleaned_response = cleaned_response[:-3]
-            
-            cleaned_response = cleaned_response.strip()
+            # Strip markdown json fences if the model wraps output in them
+            cleaned = response.strip()
+            # Remove ```json ... ``` wrappers
+            if cleaned.startswith("```json"):
+                cleaned = cleaned[7:]
+            elif cleaned.startswith("```"):
+                cleaned = cleaned[3:]
+            if cleaned.endswith("```"):
+                cleaned = cleaned[:-3]
+            cleaned = cleaned.strip()
 
-            action = json.loads(cleaned_response)
+            # Try to repair unescaped quotes before parsing
+            cleaned = repair_json(cleaned)
+
+            # If model outputs multiple JSON objects, take the first one
+            if cleaned.count("{") > 1:
+                # Find the end of the first complete object
+                depth = 0
+                end_idx = 0
+                for i, ch in enumerate(cleaned):
+                    if ch == "{":
+                        depth += 1
+                    elif ch == "}":
+                        depth -= 1
+                        if depth == 0:
+                            end_idx = i + 1
+                            break
+                cleaned = cleaned[:end_idx]
+
+            action = json.loads(cleaned)
 
         except Exception as e:
-
+            # Log raw output for debugging but don't crash the loop
             action = {
-                "thought": f"LLM returned invalid JSON. Raw output: {response}\nError: {e}",
+                "thought": f"Failed to parse LLM output as JSON. Raw: {response[:300]} | Error: {e}",
                 "action": "none",
                 "input": {}
             }
 
-        return action
+        return action

@@ -1,4 +1,4 @@
-from app.llm.gemini_client import gemini_client
+from app.llm.ollama_client import ollama_client
 
 
 class TaskInterpreterAgent:
@@ -25,6 +25,6 @@ Example output:
 }}
 """
 
-        response = gemini_client.generate(prompt)
+        response = ollama_client.generate(prompt)
 
         return response

@@ -1,4 +1,4 @@
-from app.llm.gemini_client import gemini_client
+from app.llm.ollama_client import ollama_client
 
 
 class ConversationSummarizer:
@@ -16,7 +16,7 @@ Conversation:
 Return a short summary.
 """
 
-        return gemini_client.generate(prompt)
+        return ollama_client.generate(prompt)
 
 
 summarizer = ConversationSummarizer()
