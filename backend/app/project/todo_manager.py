@@ -1,6 +1,7 @@
 import os
+from app.sandbox.workspace_manager import workspace_manager
 
-TODO_FILE = "project_todo.md"
+TODO_FILE = os.path.join(workspace_manager.ROOT, "project_todo.md")
 
 class TodoManager:
 

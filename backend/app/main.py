@@ -25,6 +25,26 @@ app.include_router(workspace_router, prefix="/api/workspace")
 # WebSocket
 app.include_router(websocket_router)
 
+from fastapi.responses import JSONResponse
+from fastapi import Request
+import traceback
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_msg = str(exc)
+    trace = traceback.format_exc()
+    # Log the trace locally if desired, but return a clean error to the UI
+    print(f"Global Error: {error_msg}\n{trace}")
+    return JSONResponse(
+        status_code=500,
+        content={"error": f"Internal Server Error: {error_msg}"},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*"
+        }
+    )
+
 @app.get("/")
 def root():
     return {"status": "Qoder backend running"}

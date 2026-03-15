@@ -1,10 +1,12 @@
 import os
+from app.sandbox.workspace_manager import workspace_manager
 
 
 def read_todo():
 
-    if not os.path.exists("project_todo.md"):
+    path = os.path.join(workspace_manager.ROOT, "project_todo.md")
+    if not os.path.exists(path):
         return ""
 
-    with open("project_todo.md") as f:
+    with open(path) as f:
         return f.read()

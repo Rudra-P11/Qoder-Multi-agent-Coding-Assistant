@@ -10,6 +10,7 @@ from app.memory.memory_manager import memory_manager
 from app.safety.action_validator import action_validator
 
 from app.agents.supervisor_agent import supervisor_agent
+from app.sandbox.workspace_manager import workspace_manager
 
 
 class AgentLoop:
@@ -17,11 +18,16 @@ class AgentLoop:
     def __init__(self):
         self.agent = ReactAgent()
         self.reflector = ReflectionAgent()
-        self.max_steps = 20
+        self.max_steps = 10
+
 
     async def run(self, task, session_id):
         context = ""
         memory_manager.store_user_prompt(session_id, task)
+        
+        execution_attempt = 1
+        last_action_key = None
+        repeat_count = 0
 
         await event_bus.broadcast({
             "agent": "react-agent",
@@ -68,46 +74,91 @@ class AgentLoop:
                 "data": input_data
             })
 
-            # 3. Tool Execution with Self-Correction (Retries)
-            max_retries = 3
-            attempt = 0
-            result = None
+            # Deduplication guard: if the agent is calling the same tool with same args twice, force a correction
+            try:
+                action_key = f"{tool}:{json.dumps(input_data, sort_keys=True)}"
+            except Exception:
+                action_key = f"{tool}:{str(input_data)}"
+            
+            if action_key == last_action_key:
+                repeat_count += 1
+            else:
+                repeat_count = 0
+                last_action_key = action_key
 
-            while attempt < max_retries:
+            if repeat_count >= 2:
+                correction_msg = (
+                    f"STOP. You have called '{tool}' with the same input {repeat_count + 1} times already. "
+                    f"Do NOT call '{tool}' again with the same input. "
+                    f"If you wrote a file, call run_code to execute it now. "
+                    f"If run_code already succeeded, output action 'none' to finish."
+                )
+                context += f"\n[LOOP DETECTED] {correction_msg}\n"
+                await event_bus.broadcast({"agent": "system", "message": f"[LOOP DETECTED] Repeated call to {tool} blocked. Agent redirected."})
+                continue
+
+            # 3. Tool Execution with Self-Correction
+            try:
+                result = sandbox_runner.run_tool(tool, input_data)
+                
+                # Check for execution failure based on exit code or explicit status
+                if result.get("exit_code") != 0 and result.get("exit_code") is not None:
+                    # Treat non-zero exit code as an error to trigger self-correction
+                    if "error" not in result:
+                        result["error"] = f"Execution failed with exit code {result.get('exit_code')}\nStderr: {result.get('stderr', '')}"
+            
+            except Exception as e:
+                result = {
+                    "status": "error",
+                    "error": str(e)
+                }
+
+            is_error = "error" in result or result.get("status") == "error"
+
+            if tool == "run_code":
+                file_path = input_data.get("file_path") or input_data.get("file", "")
                 try:
-                    result = sandbox_runner.run_tool(tool, input_data)
-                    
-                    # If execution was successful (exit_code 0), break retry loop
-                    if result.get("exit_code") == 0 or result.get("status") == "success":
-                        break
+                    code_content = workspace_manager.read_file(file_path) if file_path else "No file path provided."
+                except Exception:
+                    code_content = "Failed to read code file."
                 
-                except Exception as e:
-                    result = {
-                        "status": "error",
-                        "error": str(e)
-                    }
-
-                attempt += 1
+                payload_data = {
+                    "task": task,
+                    "code": code_content,
+                    "result": result
+                }
                 
-                # Feedback loop: Broadcast retry and update context so the agent sees the error
-                await event_bus.broadcast({
-                    "agent": "debugger",
-                    "message": f"Retry attempt {attempt} for tool: {tool}",
-                    "data": result
-                })
+                if is_error:
+                    await event_bus.broadcast({
+                        "agent": "execution",
+                        "message": f"Attempt {execution_attempt} -> Code Generated -> Execution Error",
+                        "data": payload_data
+                    })
+                    execution_attempt += 1
+                else:
+                    await event_bus.broadcast({
+                        "agent": "execution",
+                        "message": f"Attempt {execution_attempt} -> Final Code -> Success",
+                        "data": payload_data
+                    })
+                    execution_attempt += 1
+            else:
+                if is_error:
+                    await event_bus.broadcast({
+                        "agent": "debugger",
+                        "message": f"Execution failed for tool {tool}. Triggering self-correction...",
+                        "data": result
+                    })
+                else:
+                    await event_bus.broadcast({
+                        "agent": "tool",
+                        "message": f"Tool {tool} execution sequence complete",
+                        "data": result
+                    })
 
+            if is_error:
                 # Inject error into context to help the agent correct itself in the next iteration
-                context += f"\n[Attempt {attempt}] Error: {result.get('error') or result}\n"
-                
-                # Note: In a true self-correction loop, you might call self.agent.think() 
-                # again here to get NEW input_data based on the error. 
-                # As written, it retries the same input_data.
-
-            await event_bus.broadcast({
-                "agent": "tool",
-                "message": f"Tool {tool} execution sequence complete",
-                "data": result
-            })
+                context += f"\n[Self-Correction Triggered] Tool {tool} returned error: {result.get('error') or result}\n"
 
             # Update context for the next step in the main loop
             context += f"\nThought: {thought}"

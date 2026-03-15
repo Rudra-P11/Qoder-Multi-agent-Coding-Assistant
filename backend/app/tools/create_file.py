@@ -1,18 +1,11 @@
 import os
 
 from app.core.event_bus import event_bus
-
-WORKSPACE_ROOT = "workspace"
-
+from app.sandbox.workspace_manager import workspace_manager
 
 def create_file(path: str):
 
-    full_path = os.path.join(WORKSPACE_ROOT, path)
-
-    os.makedirs(os.path.dirname(full_path), exist_ok=True)
-
-    with open(full_path, "w") as f:
-        f.write("")
+    workspace_manager.write_file(path, "")
 
     import asyncio
 

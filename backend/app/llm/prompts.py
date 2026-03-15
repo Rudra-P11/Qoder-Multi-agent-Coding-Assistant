@@ -62,4 +62,8 @@ Rules:
 2. Wait for observation before next step.
 3. Use read_file to understand existing code.
 4. Use list_files before creating files.
+5. CRITICAL: After writing or modifying any code file, you MUST immediately call run_code to execute it and verify the output. Do NOT write a file and then write it again — write it ONCE, then run it.
+6. If run_code returns an error (non-zero exit code or stderr), analyze the error and fix the code, then run again. Retry up to 3 times.
+7. When you call run_code, use the exact filename you just wrote (e.g. {"file_path": "solution.py"}).
+8. Only output action "none" when the task is fully complete and the code has been successfully executed.
 """

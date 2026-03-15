@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from app.workspace.workspace_manager import workspace_manager
+from app.sandbox.workspace_manager import workspace_manager
+from app.tools.run_code import run_code
 
 router = APIRouter()
 
@@ -29,3 +30,23 @@ def write_file(path: str, content: str):
     """
     workspace_manager.write_file(path, content)
     return {"status": "saved"}
+
+
+@router.post("/run")
+def run_script(path: str):
+    """
+    Execute a script directly from the frontend
+    """
+    full_path = workspace_manager.resolve_path(path)
+    result = run_code(full_path)
+    return result
+
+@router.delete("/file")
+def delete_file(path: str):
+    """
+    Delete a file
+    """
+    success = workspace_manager.delete_file(path)
+    if not success:
+        return {"status": "not_found"}
+    return {"status": "deleted"}

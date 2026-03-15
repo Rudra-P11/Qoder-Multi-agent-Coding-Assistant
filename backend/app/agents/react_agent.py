@@ -68,13 +68,23 @@ Respond ONLY in JSON format:
         response = gemini_client.generate(prompt)
 
         try:
+            # Strip markdown json blocks if present
+            cleaned_response = response.strip()
+            if cleaned_response.startswith("```json"):
+                cleaned_response = cleaned_response[7:]
+            elif cleaned_response.startswith("```"):
+                cleaned_response = cleaned_response[3:]
+            if cleaned_response.endswith("```"):
+                cleaned_response = cleaned_response[:-3]
+            
+            cleaned_response = cleaned_response.strip()
 
-            action = json.loads(response)
+            action = json.loads(cleaned_response)
 
-        except Exception:
+        except Exception as e:
 
             action = {
-                "thought": "LLM returned invalid JSON",
+                "thought": f"LLM returned invalid JSON. Raw output: {response}\nError: {e}",
                 "action": "none",
                 "input": {}
             }

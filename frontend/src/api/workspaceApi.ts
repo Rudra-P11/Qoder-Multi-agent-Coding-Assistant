@@ -29,3 +29,21 @@ export const saveFile = async (path: string, content: string) => {
   });
 
 };
+
+export const runCode = async (path: string) => {
+
+  const res = await API.post("/workspace/run", null, {
+    params: { path },
+  });
+
+  return res.data;
+
+};
+
+export const deleteFile = async (path: string) => {
+
+  await API.delete("/workspace/file", {
+    params: { path },
+  });
+
+};

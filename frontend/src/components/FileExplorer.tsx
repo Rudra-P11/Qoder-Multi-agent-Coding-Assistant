@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { fetchFiles, saveFile } from "../api/workspaceApi";
+import { fetchFiles, saveFile, deleteFile } from "../api/workspaceApi";
 
-export default function FileExplorer({ onSelect, refreshKey }: any) {
+export default function FileExplorer({ onSelect, onDelete, refreshKey }: any) {
 
   const [files, setFiles] = useState<string[]>([]);
 
@@ -15,12 +15,21 @@ export default function FileExplorer({ onSelect, refreshKey }: any) {
 
   const createFile = async () => {
 
-    const name = prompt("Enter file name");
+    const name = prompt("Enter file name (e.g. main.cpp)");
 
     if (!name) return;
 
-    await saveFile(`workspace/${name}`, "");
+    // No prefix — file goes directly into root workspace
+    await saveFile(name, "");
 
+    loadFiles();
+  };
+
+  const handleDelete = async (e: React.MouseEvent, file: string) => {
+    e.stopPropagation(); // prevent opening the file when clicking delete
+    if (!confirm(`Delete "${file}"?`)) return;
+    await deleteFile(file);
+    if (onDelete) onDelete(file);
     loadFiles();
   };
 
@@ -45,14 +54,22 @@ export default function FileExplorer({ onSelect, refreshKey }: any) {
 
         <div
           key={i}
-          className="text-sm p-1 hover:bg-gray-700 cursor-pointer"
-          onClick={() => onSelect(file)}
+          className="flex items-center justify-between text-sm p-1 hover:bg-gray-700 cursor-pointer group"
         >
-          {file}
+          <span className="flex-1 truncate" onClick={() => onSelect(file)}>
+            {file}
+          </span>
+          <button
+            title="Delete file"
+            className="ml-1 text-red-400 opacity-0 group-hover:opacity-100 text-xs hover:text-red-300"
+            onClick={(e) => handleDelete(e, file)}
+          >
+            🗑️
+          </button>
         </div>
 
       ))}
 
     </div>
   );
-}
+}

@@ -1,6 +1,6 @@
 class ModelRouter:
 
-    def select_model(self, task):
+    def select_model(self, task: str) -> str:
 
         length = len(task)
 
@@ -15,4 +15,4 @@ class ModelRouter:
         return "gemini-2.5-pro"
 
 
-model_router = ModelRouter()
+model_router = ModelRouter()

@@ -19,17 +19,20 @@ def run_code(file_path: str):
         if runtime[0] in ["g++", "gcc"]:
 
             exe = file_path.replace(".cpp", "").replace(".c", "")
+            exe_target = exe + ".exe" if os.name == 'nt' else exe
 
             subprocess.run(
-                [runtime[0], file_path, "-o", exe],
+                [runtime[0], file_path, "-o", exe_target],
                 capture_output=True,
-                text=True
+                text=True,
+                timeout=30
             )
 
             result = subprocess.run(
-                [exe],
+                [exe_target],
                 capture_output=True,
-                text=True
+                text=True,
+                timeout=30
             )
 
         elif runtime[0] == "javac":
@@ -37,7 +40,8 @@ def run_code(file_path: str):
             subprocess.run(
                 ["javac", file_path],
                 capture_output=True,
-                text=True
+                text=True,
+                timeout=30
             )
 
             class_name = os.path.basename(file_path).replace(".java", "")
@@ -45,7 +49,8 @@ def run_code(file_path: str):
             result = subprocess.run(
                 ["java", class_name],
                 capture_output=True,
-                text=True
+                text=True,
+                timeout=30
             )
 
         else:
@@ -53,7 +58,8 @@ def run_code(file_path: str):
             result = subprocess.run(
                 runtime + [file_path],
                 capture_output=True,
-                text=True
+                text=True,
+                timeout=30
             )
 
         return {
@@ -62,6 +68,13 @@ def run_code(file_path: str):
             "exit_code": result.returncode
         }
 
+    except subprocess.TimeoutExpired as e:
+
+        return {
+            "error": f"Execution timed out after {e.timeout} seconds",
+            "exit_code": 124
+        }
+        
     except Exception as e:
 
         return {

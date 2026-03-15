@@ -80,6 +80,11 @@ class AgentOrchestrator:
             "message": "Starting agent execution"
         })
 
+        # Brief delay to avoid Gemini free-tier rate limit (5 req/min) after planning
+        import asyncio
+        await event_bus.broadcast({"agent": "system", "message": "Waiting 12s for rate limit..."})
+        await asyncio.sleep(12)
+
         result = await agent_loop.run(task, session_id)
 
         await event_bus.broadcast({

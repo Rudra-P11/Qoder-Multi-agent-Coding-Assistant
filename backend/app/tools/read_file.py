@@ -1,9 +1,9 @@
+from app.sandbox.workspace_manager import workspace_manager
+
 def read_file(path: str):
 
     try:
-
-        with open(path, "r") as f:
-            content = f.read()
+        content = workspace_manager.read_file(path)
 
         return {
             "status": "success",
