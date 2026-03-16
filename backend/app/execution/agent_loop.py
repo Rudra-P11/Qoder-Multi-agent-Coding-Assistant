@@ -214,13 +214,27 @@ class AgentLoop:
                     })
 
             if is_error:
-                # Inject error into context to help the agent correct itself in the next iteration
+                # Inject error into context to help the agent correct itself
                 context += f"\n[Self-Correction Triggered] Tool {tool} returned error: {result.get('error') or result}\n"
+
+                # ── Dead-end escalation: 3 failed run_code attempts ──────────
+                if tool == "run_code" and execution_attempt > 3:
+                    await event_bus.broadcast({
+                        "agent": "escalation",
+                        "message": "Agent is stuck after 3 failed attempts",
+                        "data": {
+                            "session_id": session_id,
+                            "attempts": execution_attempt - 1,
+                            "last_error": result.get("error") or result.get("stderr") or "Unknown error",
+                            "context_summary": context[-800:]  # last 800 chars of context
+                        }
+                    })
+                    break  # Pause the loop — user will respond via /task/escalate
 
             # Update context for the next step in the main loop
             context += f"\nThought: {thought}"
             context += f"\nAction: {tool}"
-            context += f"\nResult: {result}\n"
+            context += f"\nObservation: {result}\n"
 
         # 4. Final Reflection and Supervision
         reflection = self.reflector.reflect(task, context)

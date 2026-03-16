@@ -1,4 +1,5 @@
 from app.llm.ollama_client import ollama_client
+from app.llm.prompts import CODER_AGENT_PROMPT
 from app.core.workflow_logger import WorkflowLogger
 
 
@@ -14,19 +15,10 @@ class CoderAgent:
 
         plan_text = "\n".join(plan)
 
-        prompt = f"""
-You are a coding agent.
-
-Task:
-{task}
-
-Plan:
-{plan_text}
-
-Write the complete working code.
-"""
+        prompt = CODER_AGENT_PROMPT.format(task=task, plan_text=plan_text)
 
         code = ollama_client.generate(prompt)
+
 
         self.logger.log("CoderAgent", "Code generated")
 

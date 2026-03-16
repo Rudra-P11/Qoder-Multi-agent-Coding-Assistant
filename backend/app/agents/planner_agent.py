@@ -1,4 +1,4 @@
-from app.llm.prompts import SYSTEM_PROMPT, TASK_PROMPT_TEMPLATE
+from app.llm.prompts import PLANNER_SYSTEM_PROMPT, PLANNER_TASK_PROMPT
 from app.llm.ollama_client import ollama_client
 from app.core.workflow_logger import WorkflowLogger
 
@@ -13,7 +13,7 @@ class PlannerAgent:
 
         self.logger.log("PlannerAgent", "Creating plan")
 
-        prompt = SYSTEM_PROMPT + TASK_PROMPT_TEMPLATE.format(task=task)
+        prompt = PLANNER_SYSTEM_PROMPT + PLANNER_TASK_PROMPT.format(task=task)
 
         output = ollama_client.generate(prompt)
 

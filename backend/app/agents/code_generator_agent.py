@@ -1,4 +1,5 @@
 from app.llm.ollama_client import ollama_client
+from app.llm.prompts import CODE_GENERATOR_PROMPT
 from app.core.workflow_logger import WorkflowLogger
 
 
@@ -12,26 +13,10 @@ class CodeGeneratorAgent:
 
         self.logger.log("CodeGeneratorAgent", "Generating code")
 
-        prompt = f"""
-You are a coding agent.
-
-Task:
-{task}
-
-Language:
-{language}
-
-Execution Plan:
-{plan}
-
-Generate complete working code.
-
-Rules:
-- Only output code
-- No explanations
-"""
+        prompt = CODE_GENERATOR_PROMPT.format(task=task, language=language, plan=plan)
 
         code = ollama_client.generate(prompt)
+
 
         self.logger.log("CodeGeneratorAgent", "Code generated")
 

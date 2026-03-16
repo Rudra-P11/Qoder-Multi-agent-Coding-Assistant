@@ -1,4 +1,5 @@
 from app.llm.ollama_client import ollama_client
+from app.llm.prompts import REFLECTION_AGENT_PROMPT
 from app.core.workflow_logger import WorkflowLogger
 
 
@@ -13,15 +14,11 @@ class ReflectionAgent:
         # Trim context to avoid overloading 7B models and causing timeouts
         context_summary = str(output)[-2000:]
 
-        prompt = f"""You are a code reviewer. In 2-3 sentences, summarize what the agent did and whether it succeeded.
-
-Execution context (last 2000 chars):
-{context_summary}
-
-Summary:"""
+        prompt = REFLECTION_AGENT_PROMPT.format(context_summary=context_summary)
 
         try:
             result = ollama_client.generate(prompt)
+
             return result if result and not result.startswith("ERROR") else "Execution complete. Check output above."
         except Exception:
             return "Execution complete. Check terminal output for results."
