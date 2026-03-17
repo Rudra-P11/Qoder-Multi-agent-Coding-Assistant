@@ -10,7 +10,7 @@ Dimensions scored (0.0–1.0 each, averaged):
 If mean score ≥ THRESHOLD, returns up to 3 targeted questions as multiple-choice options.
 """
 import json
-from app.llm.ollama_client import ollama_client
+from app.llm.gemini_client import gemini_client
 from app.llm.prompts import AMBIGUITY_ANALYZER_PROMPT
 
 THRESHOLD = 0.55  # tunable — lower = ask more questions, higher = ask less
@@ -37,9 +37,9 @@ class AmbiguityAnalyzer:
         prompt = AMBIGUITY_ANALYZER_PROMPT.format(task=task)
 
         try:
-            raw = ollama_client.generate_json(prompt)
+            output = gemini_client.generate(prompt)
 
-            data = json.loads(raw)
+            data = json.loads(output)
 
             scores = data.get("scores", {})
             raw_questions = data.get("questions", [])

@@ -89,11 +89,11 @@ Task: "{task}"
 
 Score how ambiguous this task is on each dimension (0.0 = completely clear, 1.0 = completely unclear):
 - goal_clarity: Is the deliverable obvious? (what exactly should be created/output?)
-- technical_stack: Is the language, library, or framework specified?
+- technical_stack: Is the language, library, or framework specified? If there is no language specified, generate the question and ask the user for selecting languages with options (e.g. Python, JavaScript, Any - agent decides).
 - scope_bounds: Is the task clearly bounded, or could it be interpreted as very large or very small?
 - dependencies: Does it need API keys, external services, credentials, or existing code not mentioned?
 
-Then generate UP TO 3 clarifying questions (only if needed — skip obvious things).
+Then generate UP TO 3 clarifying questions. Each question should be specific to THIS task and designed to resolve a key ambiguity.
 Each question must have exactly 3 short options. The last option should ALWAYS be "Agent decides".
 
 Return ONLY this JSON:
@@ -114,6 +114,7 @@ Return ONLY this JSON:
 }}
 
 Rules:
+- If the language/framework is not specified, ask the question.
 - If overall ambiguity is low (all scores under 0.4), return an empty questions array.
 - Questions must be specific to THIS task, not generic.
 - Options must be short (max 4 words each).

@@ -1,5 +1,5 @@
-from app.llm.ollama_client import ollama_client
 from app.llm.prompts import REFLECTION_AGENT_PROMPT
+from app.llm.gemini_client import gemini_client
 from app.core.workflow_logger import WorkflowLogger
 
 
@@ -17,9 +17,9 @@ class ReflectionAgent:
         prompt = REFLECTION_AGENT_PROMPT.format(context_summary=context_summary)
 
         try:
-            result = ollama_client.generate(prompt)
+            reflection = gemini_client.generate(prompt)
 
-            return result if result and not result.startswith("ERROR") else "Execution complete. Check output above."
+            return reflection if reflection and not reflection.startswith("ERROR") else "Execution complete. Check output above."
         except Exception:
             return "Execution complete. Check terminal output for results."
 

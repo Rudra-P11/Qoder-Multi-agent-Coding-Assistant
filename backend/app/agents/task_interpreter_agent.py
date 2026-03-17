@@ -1,5 +1,6 @@
-from app.llm.ollama_client import ollama_client
+from app.llm.gemini_client import gemini_client
 from app.llm.prompts import TASK_INTERPRETER_PROMPT
+import json
 
 
 class TaskInterpreterAgent:
@@ -8,7 +9,7 @@ class TaskInterpreterAgent:
 
         prompt = TASK_INTERPRETER_PROMPT.format(task=task)
 
-        response = ollama_client.generate(prompt)
+        output = gemini_client.generate_json(prompt)
 
 
-        return response
+        return json.loads(output)

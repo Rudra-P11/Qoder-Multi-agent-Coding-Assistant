@@ -1,4 +1,4 @@
-from app.llm.ollama_client import ollama_client
+from app.llm.gemini_client import gemini_client
 from app.llm.prompts import DEBUGGER_AGENT_PROMPT
 from app.core.workflow_logger import WorkflowLogger
 
@@ -15,7 +15,7 @@ class DebuggerAgent:
 
         prompt = DEBUGGER_AGENT_PROMPT.format(code=code, error=error)
 
-        new_code = ollama_client.generate(prompt)
+        new_code = gemini_client.generate(prompt)
 
 
         return new_code

@@ -1,4 +1,4 @@
-from app.llm.ollama_client import ollama_client
+from app.llm.gemini_client import gemini_client
 from app.llm.prompts import DEBUG_AGENT_PROMPT
 
 
@@ -8,7 +8,7 @@ class DebugAgent:
 
         prompt = DEBUG_AGENT_PROMPT.format(error=error, code=code)
 
-        fixed_code = ollama_client.generate(prompt)
+        fixed_code = gemini_client.generate(prompt)
 
 
         return fixed_code

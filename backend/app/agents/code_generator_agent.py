@@ -1,4 +1,4 @@
-from app.llm.ollama_client import ollama_client
+from app.llm.gemini_client import gemini_client
 from app.llm.prompts import CODE_GENERATOR_PROMPT
 from app.core.workflow_logger import WorkflowLogger
 
@@ -15,7 +15,7 @@ class CodeGeneratorAgent:
 
         prompt = CODE_GENERATOR_PROMPT.format(task=task, language=language, plan=plan)
 
-        code = ollama_client.generate(prompt)
+        code = gemini_client.generate(prompt)
 
 
         self.logger.log("CodeGeneratorAgent", "Code generated")

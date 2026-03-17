@@ -1,5 +1,5 @@
-from app.llm.ollama_client import ollama_client
 from app.llm.prompts import SUPERVISOR_AGENT_PROMPT
+from app.llm.gemini_client import gemini_client
 
 
 class SupervisorAgent:
@@ -12,9 +12,9 @@ class SupervisorAgent:
         prompt = SUPERVISOR_AGENT_PROMPT.format(task=task, context_trimmed=context_trimmed)
 
         try:
-            result = ollama_client.generate(prompt)
+            output = gemini_client.generate(prompt)
 
-            return result if result and not result.startswith("ERROR") else "Agent execution complete."
+            return output if output and not output.startswith("ERROR") else "Agent execution complete."
         except Exception:
             return "Agent execution complete."
 

@@ -1,6 +1,6 @@
 import json
 
-from app.llm.ollama_client import ollama_client, repair_json
+from app.llm.gemini_client import gemini_client
 from app.llm.prompts import REACT_AGENT_PROMPT
 
 
@@ -17,42 +17,15 @@ class ReactAgent:
             REACT_AGENT_PROMPT
             + f"\nUser task: {task}"
             + history_section
-            + "\nYour next JSON action (output ONLY the JSON, nothing else):\n"
+            + "\nYour next JSON action:\n"
         )
 
-        response = ollama_client.generate_json(prompt)
+        # Use the specialized JSON generation method for Gemini
+        response = gemini_client.generate_json(prompt)
 
         try:
-            # Strip markdown json fences if the model wraps output in them
-            cleaned = response.strip()
-            # Remove ```json ... ``` wrappers
-            if cleaned.startswith("```json"):
-                cleaned = cleaned[7:]
-            elif cleaned.startswith("```"):
-                cleaned = cleaned[3:]
-            if cleaned.endswith("```"):
-                cleaned = cleaned[:-3]
-            cleaned = cleaned.strip()
-
-            # Try to repair unescaped quotes before parsing
-            cleaned = repair_json(cleaned)
-
-            # If model outputs multiple JSON objects, take the first one
-            if cleaned.count("{") > 1:
-                # Find the end of the first complete object
-                depth = 0
-                end_idx = 0
-                for i, ch in enumerate(cleaned):
-                    if ch == "{":
-                        depth += 1
-                    elif ch == "}":
-                        depth -= 1
-                        if depth == 0:
-                            end_idx = i + 1
-                            break
-                cleaned = cleaned[:end_idx]
-
-            action = json.loads(cleaned)
+            # Gemini's generate_json returns clean JSON without fences
+            action = json.loads(response.strip())
 
         except Exception as e:
             # Log raw output for debugging but don't crash the loop
