@@ -27,7 +27,7 @@ The agents interact with the system through a suite of secure, sandboxed tools:
 
 ## Execution Workflow
 
-![alt text](diagram-export-17-3-2026-7_18_43-pm.svg)
+![Workflow Diagram](diagram.png)
 
 ## 🚦 How to Run
 
