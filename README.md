@@ -6,11 +6,13 @@ Qoder is a powerful, locally-hosted agentic AI coding assistant that plans, exec
 
 Qoder is built on a modular, multi-agent architecture where specialized agents collaborate to ensure high success rates:
 
-1.  **Ambiguity Analyzer**: It scans your prompt for vagueness and asks clarifying questions *before* any code is written, preventing the agent from guessing your requirements.
+1.  **Ambiguity Analyzer**: It scans user prompt for vagueness and asks clarifying questions *before* any code is written, preventing the agent from guessing user requirements.
 2.  **Planner Agent**: It breaks down complex tasks into a structured, tool-based execution plan saved as a `project_todo.md` file. It focuses on logic flow without writing implementation code.
-3.  **ReAct Agent**: This is the primary engine that executes the plan. It follows a Thinking → Action → Observation cycle, using tools to write code, run it, and read the results.
-4.  **Reflection Agent**: After execution, it analyzes the output to summarize the changes and verify if the user's intent was met.
-5.  **Supervisor Agent**: It tracks progression, detects infinite loops, and triggers an escalation panel if the agent hits a dead-end after multiple retries.
+3. **Code Generator Agent**: It generates clean code with the user prompt and the contriants as context along with the todo-steps as specified.
+4.  **ReAct Agent**: This is the primary engine that executes the plan. It follows a Thinking → Action → Observation cycle, using tools to write code, run it, and read the results.
+5.  **Reflection Agent**: After execution, it analyzes the output to summarize the changes and verify if the user's intent was met.
+6. **Debugger Agent**: If the execution fails and the std output comes up with an error, this agent tries to fix the error and regenerates the code execution loop.
+7.  **Supervisor Agent**: It tracks progression, detects infinite loops, and triggers an escalation panel if the agent hits a dead-end after multiple retries.
 
 ## 🛠️ Tool Definitions
 
@@ -22,6 +24,10 @@ The agents interact with the system through a suite of secure, sandboxed tools:
 - `list_files()`: Scans the workspace directory so the agent knows exactly which files are available.
 - `install_package(package)`: Uses pip or npm to install dependencies required for the generated code.
 - `todo_management`: Allows the agent to read and update the `project_todo.md` checklist to track its own progress.
+
+## Execution Workflow
+
+![alt text](diagram-export-17-3-2026-7_18_43-pm.svg)
 
 ## 🚦 How to Run
 
