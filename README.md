@@ -1,42 +1,43 @@
 # Qoder: Agentic AI Coding Assistant
 
-Qoder is a powerful, locally-hosted agentic AI coding assistant designed to bridge the gap between human instruction and automated execution. Powered by **Ollama** and a specialized **ReAct (Reasoning and Acting)** agent loop, Qoder can plan, write, execute, and self-correct code autonomously.
+Qoder is a powerful, locally-hosted agentic AI coding assistant that plans, executes, and self-corrects code autonomously. It uses a sophisticated **ReAct (Reasoning and Acting)** loop to transform natural language instructions into functional, verified codebases.
 
-## 🚀 Project Overview
+## 🏗️ Architecture Overview
 
-### 1. Multi-Agent Architecture and Planning
-The core of the system is a modular backend where tasks are decomposed into structured execution plans. A **Task Interpreter** extracts technical metadata (language, libraries) to ground the assistant’s strategy. This leads into a **Planning Phase**, where a specialized agent generates a JSON array of discrete tasks.
+Qoder is built on a modular, multi-agent architecture where specialized agents collaborate to ensure high success rates:
 
-### 2. Sandboxed Execution and User Interface
-Code execution occurs in an isolated Python subprocess restricted to a dedicated workspace directory with strict path validation and timeouts. The system features a **React-based web UI** with a live terminal and the **Monaco Editor**, providing full visibility into the agent's work.
+1.  **Ambiguity Analyzer**: It scans your prompt for vagueness and asks clarifying questions *before* any code is written, preventing the agent from guessing your requirements.
+2.  **Planner Agent**: It breaks down complex tasks into a structured, tool-based execution plan saved as a `project_todo.md` file. It focuses on logic flow without writing implementation code.
+3.  **ReAct Agent**: This is the primary engine that executes the plan. It follows a Thinking → Action → Observation cycle, using tools to write code, run it, and read the results.
+4.  **Reflection Agent**: After execution, it analyzes the output to summarize the changes and verify if the user's intent was met.
+5.  **Supervisor Agent**: It tracks progression, detects infinite loops, and triggers an escalation panel if the agent hits a dead-end after multiple retries.
 
-### 3. Self-Correction and Feedback Loop
-A recursive agent loop handles errors by feeding `stderr` back into a **Debugger Agent**. To prevent repeating failed logic, a **Reflector Agent** analyzes why a previous attempt failed before proposing a specific technical change for the next iteration.
+## 🛠️ Tool Definitions
 
-### 4. Memory and Context Management
-The assistant manages its state through a multi-tiered memory system:
-* **Short-Term Memory:** Maintains a rolling conversation history within each agent's loop.
-* **Working Memory:** Uses persistent files like `project_todo.md` to store state.
-* **Context Pruning:** Automatically handles LLM token limits while retaining critical instructions.
+The agents interact with the system through a suite of secure, sandboxed tools:
 
-### 5. Out-of-the-Box: Ambiguity Analysis
-To handle underspecified prompts, Qoder features an **Ambiguity Analyzer**. It scores requests based on clarity; if a prompt is too vague, the system interrupts the workflow to ask the user targeted, multiple-choice clarifying questions.
-
----
+- `run_code(file_path)`: Executes Python, JavaScript, C++, or Java code in a sandbox. Captures `stdout`, `stderr`, and exit codes for the feedback loop.
+- `write_file(path, content)`: Creates or overwrites files within the protected `/workspace` directory.
+- `read_file(path)`: Retrieves the content of any file in the workspace to give the agent context.
+- `list_files()`: Scans the workspace directory so the agent knows exactly which files are available.
+- `install_package(package)`: Uses pip or npm to install dependencies required for the generated code.
+- `todo_management`: Allows the agent to read and update the `project_todo.md` checklist to track its own progress.
 
 ## 🚦 How to Run
 
 ### 1. Prerequisites
-
-(If you want to use locally downloaded model)
-- **Ollama**: Install Ollama and pull the model: `ollama pull qwen2.5-coder:7b`.
-- **Python 3.10+** & **Node.js**.
+- **Ollama**: Install [Ollama](https://ollama.com/) and download the model:
+  ```bash
+  ollama pull qwen2.5-coder:7b
+  ```
+- **Node.js**: Version 18 or higher.
+- **Python**: Version 3.10 or higher.
 
 ### 2. Backend Setup
 ```bash
 cd backend
 python -m venv venv
-source venv/Scripts/activate  # Linux: source venv/bin/activate
+source venv/Scripts/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
@@ -47,15 +48,18 @@ cd frontend
 npm install
 npm run dev
 ```
+Open `http://localhost:5173` to start using Qoder.
 
----
+## 🧠 Memory & Context Handling
 
-## 🔄 Switching Back to Gemini
+Qoder manages information across multiple layers:
+- **Short-Term Memory**: A rolling history of "Thought → Action → Observation" steps maintained within the current session.
+- **Working Memory**: The `project_todo.md` acts as a physical source of truth that survives session interruptions.
+- **Context Pruning**: The system automatically summarizes long error logs and trims conversation history to stay within LLM token limits while keeping core instructions.
 
-If you want to move from the local Ollama model to Google's Gemini API:
+## 🔄 Switching to Gemini
 
-1. **Set API Key**: In `backend/app/config.py`, set your `GEMINI_API_KEY`.
-2. **Update Imports**: In every agent file in `backend/app/agents/`, replace `ollama_client` imports with `gemini_client`.
-3. **Update Calls**: Replace all `ollama_client.generate(prompt)` calls with `gemini_client.generate(prompt)`.
-
-*Note: Gemini models are more permissive with JSON, so you may be able to simplify the JSON repair logic in `react_agent.py`.*
+If you wish to switch from local Ollama to Google Gemini:
+1.  **API Key**: Add your `GEMINI_API_KEY` to `backend/app/config.py`.
+2.  **Config**: Update the LLM client imports in `backend/app/agents/` from `ollama_client` to `gemini_client`.
+3.  **Adapt**: Gemini is more native with JSON, so you can bypass the `repair_json` utility logic in the agent loops.
